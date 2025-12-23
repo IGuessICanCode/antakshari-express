@@ -1,0 +1,286 @@
+/* ================================
+   GLOBAL
+================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Poppins", system-ui, sans-serif;
+  background: #f16022;
+  color: #191348;
+}
+
+/* ================================
+   HEADER
+================================ */
+
+/* ================================
+   HEADER WITH LOGO
+================================ */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 16px 20px 12px;
+  color: #ffffff;
+}
+
+.app-logo {
+  height: 32px;          /* small & confident */
+  width: auto;
+}
+
+.app-title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+/* ================================
+   LAYOUT
+================================ */
+
+main {
+  max-width: 420px;
+  margin: 0 auto;
+  padding-bottom: 28px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ================================
+   CARD
+================================ */
+
+.card {
+  background: #f2e9db;
+  margin: 12px;
+  padding: 16px;
+  border-radius: 18px;
+}
+
+/* ================================
+   BUTTONS
+================================ */
+
+button {
+  border: none;
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+.primary-btn {
+  background: #191348;
+  color: #f2e9db;
+  width: 100%;
+}
+
+.secondary-btn {
+  background: rgba(25, 19, 72, 0.08);
+  color: #191348;
+  width: 100%;
+}
+
+/* ================================
+   SCOREBOARD
+================================ */
+
+.scoreboard {
+  margin: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.score-row {
+  background: #f2e9db;
+  border-radius: 16px;
+  padding: 12px 14px;
+
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 15px;
+  font-weight: 600;
+  will-change: transform;
+}
+
+.score-row > div:nth-child(2) {
+  font-weight: 700;
+  min-width: 26px;
+  text-align: right;
+}
+
+.score-row button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 10px;
+  background: #191348;
+  color: #f2e9db;
+  font-size: 15px;
+}
+
+
+/* ================================
+   ROUND CONTEXT
+================================ */
+
+.round-instruction {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: 10px;
+}
+
+/* ================================
+   WORD (HERO)
+================================ */
+
+.word {
+  margin-top: 14px;
+  padding: 28px 20px;          /* ⬆ bigger card */
+
+  background: #191348;
+  color: #f2e9db;
+
+  border-radius: 22px;
+
+  font-size: 28px;             /* ⬆ bigger word */
+  font-weight: 800;
+  letter-spacing: 0.03em;
+
+  text-align: center;
+
+  line-height: 1.2;
+
+  /* subtle emphasis, not flashy */
+  box-shadow: 0 8px 20px rgba(25, 19, 72, 0.25);
+}
+
+.word {
+  animation: wordPop 200ms ease-out;
+}
+
+@keyframes wordPop {
+  from {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
+/* ================================
+   FOOTER ACTIONS
+================================ */
+
+.footer-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+}
+
+/* ================================
+   OVERLAYS
+================================ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(25, 19, 72, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.modal {
+  background: #f2e9db;
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  width: min(90%, 320px);
+}
+
+.modal h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.modal p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ================================
+   CONFETTI (OPTIONAL, MINIMAL)
+================================ */
+
+#confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+}
+
+#setupCard input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: none;
+  margin-bottom: 10px;
+}
+
+#setupCard button + button {
+  margin-top: 10px;
+}
+
+#setupCard .scoreboard {
+  margin: 10px 0;
+}
+
+
+.secondary-btn {
+  background: rgba(25, 19, 72, 0.12);
+  color: #191348;
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+

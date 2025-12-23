@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Antakshari Express</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+ <header class="app-header">
+  <img src="logo.png" alt="Mood Labs" class="app-logo" />
+  <div class="app-title">
+    Antakshari Express
+    <div class="subtitle">Sing fast. Score faster.</div>
+  </div>
+</header>
+
+
+  <main>
+
+<!-- PLAYER SETUP -->
+<section id="setupCard" class="card">
+  <input
+    id="playerNameInput"
+    type="text"
+    placeholder="Player name"
+  />
+
+  <button id="addPlayerBtn" class="primary-btn" type="button">
+    Add Player
+  </button>
+
+  <button id="startGameBtn" class="primary-btn" type="button">
+    Start Game
+  </button>
+
+  <button id="howToBtnSetup" class="secondary-btn" type="button">
+  How to Play
+</button>
+
+</section>
+
+<!-- SCOREBOARD (ALWAYS VISIBLE) -->
+<div id="playerList" class="scoreboard"></div>
+
+ 
+
+  <!-- GAME PLAY -->
+  <section id="gamePlay" class="card hidden">
+
+    <div class="round-instruction">
+      Grab the phone & sing a song with this word
+    </div>
+
+    <button id="revealWordBtn" type="button" class="primary-btn">
+      Reveal / Next Word
+    </button>
+
+    <div id="wordDisplay" class="word hidden"></div>
+
+    <div class="footer-actions">
+      <button id="howToBtn" type="button" class="secondary-btn">
+        How to Play
+      </button>
+      <button id="newGameBtn" type="button" class="secondary-btn">
+        New Game
+      </button>
+    </div>
+
+  </section>
+
+</main>
+
+
+  <!-- HOW TO PLAY OVERLAY -->
+  <div id="howToOverlay" class="overlay hidden">
+    <div class="modal">
+      <h2>How to Play</h2>
+      <p>
+        A word appears on the screen.<br><br>
+        Sing a Bollywood song with that word.<br><br>
+        First correct song scores 10 points.<br><br>
+        First to 70 points wins.
+      </p>
+      <button id="closeHowToBtn" class="primary-btn">
+        Got it
+      </button>
+    </div>
+  </div>
+
+  <!-- WINNER OVERLAY (already wired in JS) -->
+  <div id="winnerOverlay" class="overlay hidden">
+    <div class="modal">
+      <h2 id="winnerName"></h2>
+      <button id="winnerRestartBtn" class="primary-btn">
+        Play Again
+      </button>
+    </div>
+  </div>
+
+  <div id="confetti-container"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
