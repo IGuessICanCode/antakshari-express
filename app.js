@@ -11,61 +11,12 @@ successSound.preload = "auto";
 
 
 const WORDS = [
-  // emotions
-  "dil",
-  "pyaar",
-  "ishq",
-  "mohabbat",
-  "yaadein",
-  "khushi",
-  "gham",
-  "junoon",
-  "armaan",
-
-  // time & nature
-  "raat",
-  "din",
-  "subah",
-  "shaam",
-  "chand",
-  "taare",
-  "baarish",
-  "hawa",
-
-  // people & relationships
-  "sajna",
-  "piya",
-  "dost",
-  "yaar",
-  "mehboob",
-  "sanam",
-
-  // actions & feelings
-  "chal",
-  "ruk",
-  "jaana",
-  "aana",
-  "dekho",
-  "sun",
-  "bolo",
-
-  // life themes
-  "zindagi",
-  "safar",
-  "raaste",
-  "kahani",
-  "khwab",
-  "sapna",
-
-  // classic Bollywood staples
-  "naina",
-  "ankhon",
-  "baatein",
-  "pal",
-  "lamhe",
-  "dilbar",
-  "sitam",
-  "kasam"
+  "raat","sapna","dil","ishq","yaadein","khushi","pyaar","hum","tum","din",
+    "gham","zindagi","jaan","bewafa","safar","saath","raasta","hawaa","taare",
+    "ghar","sheher","chaand","pal","rang","junoon","baatein","aankh","mere",
+    "tere","door","paas","pani","kuch","duniya","piya","phir","udd","pankh",
+    "allah","main","bina","jawaani","chori","fevicol","sunita","nach","laila",
+    "saturday","sajna","nahi","rani","raja","sauda","lift","kyaa","kyun","kala"
 ];
 
 
