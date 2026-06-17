@@ -1,125 +1,171 @@
-import { WORD_LISTS } from "./words.js";
-import { renderScoreboard, showWord } from "./ui.js";
-import { db } from "./firebase-init.js";
-import {
-  collection, addDoc, updateDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { renderScoreboard, showWord, hideWord, highlightRow } from "./ui.js";
 
-const setupCard = document.getElementById("setupCard");
-const gamePlay = document.getElementById("gamePlay");
+const POINTS_PER_SCORE = 10;
+const WINNING_SCORE = 70;
+const successSound = new Audio("success.mp3");
+successSound.preload = "auto";
 
-const playerInput = document.getElementById("playerInput");
-const addPlayerBtn = document.getElementById("addPlayerBtn");
-const startGameBtn = document.getElementById("startGameBtn");
-const revealWordBtn = document.getElementById("revealWordBtn");
-const newGameBtn = document.getElementById("newGameBtn");
-
-const wordDisplay = document.getElementById("wordDisplay");
-const playerList = document.getElementById("playerList");
-const wordCategorySelect = document.getElementById("wordCategory");
-
-const howToOverlay = document.getElementById("howToOverlay");
-const howToBtn = document.getElementById("howToBtn");
-const howToBtnSetup = document.getElementById("howToBtnSetup");
-const closeHowToBtn = document.getElementById("closeHowToBtn");
+const WORDS = [
+  "dil","pyaar","ishq","mohabbat","yaadein","khushi","gham","junoon","armaan",
+  "raat","din","subah","shaam","chand","taare","baarish","hawa",
+  "sajna","piya","dost","yaar","mehboob","sanam",
+  "chal","ruk","jaana","aana","dekho","sun","bolo",
+  "zindagi","safar","raaste","kahani","khwab","sapna",
+  "naina","ankhon","baatein","pal","lamhe","dilbar","sitam","kasam"
+];
 
 let players = [];
-let ACTIVE_WORDS = [];
 let usedWords = new Set();
+let currentWord = null;
 let roundActive = false;
 let sessionRef = null;
 let sessionStart = null;
 let wordsRevealed = 0;
+let firestoreUpdate = null;
 
-/* ---------- HOW TO PLAY ---------- */
+const setupCard    = document.getElementById("setupCard");
+const gamePlay     = document.getElementById("gamePlay");
+const playerInput  = document.getElementById("playerNameInput");
+const addPlayerBtn = document.getElementById("addPlayerBtn");
+const startGameBtn = document.getElementById("startGameBtn");
+const playerList   = document.getElementById("playerList");
+const revealWordBtn = document.getElementById("revealWordBtn");
+const wordDisplay  = document.getElementById("wordDisplay");
+const howToBtn     = document.getElementById("howToBtn");
+const howToBtnSetup = document.getElementById("howToBtnSetup");
+const newGameBtn   = document.getElementById("newGameBtn");
+const howToOverlay = document.getElementById("howToOverlay");
+const closeHowToBtn = document.getElementById("closeHowToBtn");
+const winnerOverlay = document.getElementById("winnerOverlay");
+const winnerName   = document.getElementById("winnerName");
+const winnerRestartBtn = document.getElementById("winnerRestartBtn");
 
-howToBtn.onclick = howToBtnSetup.onclick = () => howToOverlay.classList.remove("hidden");
-closeHowToBtn.onclick = () => howToOverlay.classList.add("hidden");
+/* ================================
+   HOW TO PLAY
+================================ */
 
-document.addEventListener("click", (e) => {
-  if (e.target.closest("#closeHowToBtn")) howToOverlay.classList.add("hidden");
-});
+function openHowTo() { howToOverlay.classList.remove("hidden"); }
+function closeHowTo() { howToOverlay.classList.add("hidden"); }
 
-/* ---------- ADD PLAYER ---------- */
+howToBtn.onclick = openHowTo;
+howToBtnSetup.onclick = openHowTo;
+closeHowToBtn.onclick = closeHowTo;
+
+/* ================================
+   SETUP
+================================ */
 
 addPlayerBtn.onclick = () => {
   const name = playerInput.value.trim();
   if (!name) return;
+  if (players.length >= 10) return alert("Max 10 players");
 
   players.push({ id: Date.now(), name, score: 0 });
   playerInput.value = "";
-  renderScoreboard(playerList, players, handleScore);
+  render();
 };
-
-/* ---------- START GAME ---------- */
 
 startGameBtn.onclick = async () => {
   if (players.length < 2) { alert("Add at least 2 players"); return; }
 
-  const selectedCategory = wordCategorySelect.value;
-  ACTIVE_WORDS = WORD_LISTS[selectedCategory];
-
-  if (!ACTIVE_WORDS || ACTIVE_WORDS.length === 0) { alert("No words loaded"); return; }
-
-  wordCategorySelect.disabled = true;
   setupCard.classList.add("hidden");
   gamePlay.classList.remove("hidden");
 
   sessionStart = Date.now();
   wordsRevealed = 0;
+
   try {
+    const { db } = await import("./firebase-init.js");
+    const { collection, addDoc, updateDoc, serverTimestamp } =
+      await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+
+    firestoreUpdate = (data) => updateDoc(sessionRef, data).catch(() => {});
+
     sessionRef = await addDoc(collection(db, "sessions"), {
       startedAt:       serverTimestamp(),
       playerCount:     players.length,
       playerNames:     players.map(p => p.name),
-      category:        selectedCategory,
       wordsRevealed:   0,
       durationSeconds: null,
       finalScores:     null,
     });
   } catch (e) {
-    console.error("Session tracking error:", e);
+    console.error("Session tracking unavailable:", e);
   }
 };
 
-/* ---------- REVEAL WORD ---------- */
+/* ================================
+   GAMEPLAY
+================================ */
 
 revealWordBtn.onclick = () => {
-  if (!ACTIVE_WORDS.length) return;
-  if (usedWords.size >= ACTIVE_WORDS.length) usedWords.clear();
+  roundActive = false;
+
+  if (usedWords.size === WORDS.length) usedWords.clear();
 
   let word;
-  do { word = ACTIVE_WORDS[Math.floor(Math.random() * ACTIVE_WORDS.length)]; }
+  do { word = WORDS[Math.floor(Math.random() * WORDS.length)]; }
   while (usedWords.has(word));
 
   usedWords.add(word);
+  currentWord = word;
   roundActive = true;
   wordsRevealed++;
   showWord(wordDisplay, word);
 
-  if (sessionRef) updateDoc(sessionRef, { wordsRevealed }).catch(() => {});
+  if (sessionRef && firestoreUpdate) firestoreUpdate({ wordsRevealed });
 };
 
-/* ---------- SCORE ---------- */
-
-function handleScore(playerId) {
+function scorePoint(playerId) {
   if (!roundActive) return;
-  const player = players.find(p => p.id === playerId);
-  if (!player) return;
-
-  player.score += 10;
   roundActive = false;
-  players.sort((a, b) => b.score - a.score);
-  renderScoreboard(playerList, players, handleScore);
+
+  const p = players.find(pl => pl.id === playerId);
+  if (!p) return;
+
+  successSound.currentTime = 0;
+  successSound.play();
+
+  p.score += POINTS_PER_SCORE;
+  highlightRow(playerId);
+  render();
+
+  if (p.score >= WINNING_SCORE) {
+    setTimeout(() => showWinner(p.name), 300);
+  }
 }
 
-/* ---------- NEW GAME ---------- */
+/* ================================
+   RENDER
+================================ */
 
-newGameBtn.onclick = async () => {
-  if (sessionRef && sessionStart) {
+function render() {
+  players.sort((a, b) => b.score - a.score);
+  renderScoreboard(playerList, players, scorePoint);
+}
+
+/* ================================
+   WINNER
+================================ */
+
+function showWinner(name) {
+  winnerName.textContent = `${name} wins! 🎉`;
+  winnerOverlay.classList.remove("hidden");
+
+  if (sessionRef && sessionStart && firestoreUpdate) {
+    const duration = Math.round((Date.now() - sessionStart) / 1000);
+    firestoreUpdate({
+      durationSeconds: duration,
+      finalScores: players.map(p => ({ name: p.name, score: p.score })),
+    });
+  }
+}
+
+newGameBtn.onclick = winnerRestartBtn.onclick = async () => {
+  if (sessionRef && sessionStart && firestoreUpdate) {
     const duration = Math.round((Date.now() - sessionStart) / 1000);
     try {
-      await updateDoc(sessionRef, {
+      await firestoreUpdate({
         durationSeconds: duration,
         finalScores: players.map(p => ({ name: p.name, score: p.score })),
       });
@@ -129,11 +175,13 @@ newGameBtn.onclick = async () => {
 };
 
 window.addEventListener("beforeunload", () => {
-  if (sessionRef && sessionStart) {
+  if (sessionRef && sessionStart && firestoreUpdate) {
     const duration = Math.round((Date.now() - sessionStart) / 1000);
-    updateDoc(sessionRef, {
+    firestoreUpdate({
       durationSeconds: duration,
       finalScores: players.map(p => ({ name: p.name, score: p.score })),
-    }).catch(() => {});
+    });
   }
 });
+
+window.addEventListener("load", () => { openHowTo(); });
