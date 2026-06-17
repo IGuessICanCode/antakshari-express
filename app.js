@@ -1,67 +1,35 @@
-import { renderScoreboard, showWord, hideWord, highlightRow } from "./ui.js";
-
-/* ================================
-   CONFIG
-================================ */
-
-const POINTS_PER_SCORE = 10;
-const WINNING_SCORE = 70;
-const successSound = new Audio("success.mp3");
-successSound.preload = "auto";
-
-
-const WORDS = [
-  "raat","sapna","dil","ishq","yaadein","khushi","pyaar","hum","tum","din",
-    "gham","zindagi","jaan","bewafa","safar","saath","raasta","hawaa","taare",
-    "ghar","sheher","chaand","pal","rang","junoon","baatein","aankh","mere",
-    "tere","door","paas","pani","kuch","duniya","piya","phir","udd","pankh",
-    "allah","main","bina","jawaani","chori","fevicol","sunita","nach","laila",
-    "saturday","sajna","nahi","rani","raja","sauda","lift","kyaa","kyun","kala"
-];
-
-
-/* ================================
-   STATE
-================================ */
-
-let players = [];
-let usedWords = new Set();
-let currentWord = null;
-let roundActive = false;
-
-
-/* ================================
-   DOM
-================================ */
+import { WORD_LISTS } from "./words.js";
+import { renderScoreboard, showWord } from "./ui.js";
+import { db } from "./firebase-init.js";
+import {
+  collection, addDoc, updateDoc, doc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const setupCard = document.getElementById("setupCard");
 const gamePlay = document.getElementById("gamePlay");
 
-const playerInput = document.getElementById("playerNameInput");
+const playerInput = document.getElementById("playerInput");
 const addPlayerBtn = document.getElementById("addPlayerBtn");
 const startGameBtn = document.getElementById("startGameBtn");
-
-const howToBtnSetup = document.getElementById("howToBtnSetup");
-
-
-const playerList = document.getElementById("playerList");
-
 const revealWordBtn = document.getElementById("revealWordBtn");
-const wordDisplay = document.getElementById("wordDisplay");
-
-const howToBtn = document.getElementById("howToBtn");
 const newGameBtn = document.getElementById("newGameBtn");
 
+const wordDisplay = document.getElementById("wordDisplay");
+const playerList = document.getElementById("playerList");
+const wordCategorySelect = document.getElementById("wordCategory");
+
 const howToOverlay = document.getElementById("howToOverlay");
+const howToBtn = document.getElementById("howToBtn");
+const howToBtnSetup = document.getElementById("howToBtnSetup");
 const closeHowToBtn = document.getElementById("closeHowToBtn");
 
-const winnerOverlay = document.getElementById("winnerOverlay");
-const winnerName = document.getElementById("winnerName");
-const winnerRestartBtn = document.getElementById("winnerRestartBtn");
-
-/* ================================
-   HOW TO PLAY OVERLAY
-================================ */
+let players = [];
+let ACTIVE_WORDS = [];
+let usedWords = new Set();
+let roundActive = false;
+let sessionRef = null;
+let sessionStart = null;
+let wordsRevealed = 0;
 
 function openHowTo() {
   howToOverlay.classList.remove("hidden");
@@ -75,14 +43,12 @@ howToBtn.onclick = openHowTo;
 howToBtnSetup.onclick = openHowTo;
 closeHowToBtn.onclick = closeHowTo;
 
-/* ================================
-   SETUP FLOW
-================================ */
+
+/* ---------- ADD PLAYER ---------- */
 
 addPlayerBtn.onclick = () => {
   const name = playerInput.value.trim();
   if (!name) return;
-  if (players.length >= 10) return alert("Max 10 players");
 
   players.push({
     id: Date.now(),
@@ -91,85 +57,89 @@ addPlayerBtn.onclick = () => {
   });
 
   playerInput.value = "";
-  render();
+  renderScoreboard(playerList, players, handleScore);
 };
 
-startGameBtn.onclick = () => {
+/* ---------- START GAME ---------- */
+
+startGameBtn.onclick = async () => {
   if (players.length < 2) {
     alert("Add at least 2 players");
     return;
   }
 
+  const selectedCategory = wordCategorySelect.value;
+  ACTIVE_WORDS = WORD_LISTS[selectedCategory];
+
+  if (!ACTIVE_WORDS || ACTIVE_WORDS.length === 0) {
+    alert("No words loaded");
+    return;
+  }
+
+  wordCategorySelect.disabled = true;
   setupCard.classList.add("hidden");
   gamePlay.classList.remove("hidden");
+
+  // Log session start to Firestore
+  sessionStart = Date.now();
+  wordsRevealed = 0;
+  try {
+    sessionRef = await addDoc(collection(db, "sessions"), {
+      startedAt: serverTimestamp(),
+      playerCount: players.length,
+      playerNames: players.map(p => p.name),
+      category: selectedCategory,
+      wordsRevealed: 0,
+      durationSeconds: null,
+      finalScores: null,
+    });
+  } catch (e) {
+    console.error("Session tracking error:", e);
+  }
 };
 
-/* ================================
-   GAMEPLAY
-================================ */
+/* ---------- REVEAL WORD ---------- */
 
 revealWordBtn.onclick = () => {
-  // If a round was active, we're skipping it
-  roundActive = false;
+  if (!ACTIVE_WORDS.length) return;
 
-  if (usedWords.size === WORDS.length) {
+  if (usedWords.size >= ACTIVE_WORDS.length) {
     usedWords.clear();
   }
 
   let word;
   do {
-    word = WORDS[Math.floor(Math.random() * WORDS.length)];
+    word = ACTIVE_WORDS[Math.floor(Math.random() * ACTIVE_WORDS.length)];
   } while (usedWords.has(word));
 
   usedWords.add(word);
-  currentWord = word;
-
   roundActive = true;
+  wordsRevealed++;
   showWord(wordDisplay, word);
+
+  if (sessionRef) {
+    updateDoc(sessionRef, { wordsRevealed }).catch(() => {});
+  }
 };
 
+/* ---------- SCORE ---------- */
 
-function scorePoint(playerId) {
+function handleScore(playerId) {
   if (!roundActive) return;
 
+  const player = players.find(p => p.id === playerId);
+  if (!player) return;
+
+  player.score += 10;
   roundActive = false;
 
-  const p = players.find(pl => pl.id === playerId);
-  if (!p) return;
-
-  // 🔊 play success sound
-  successSound.currentTime = 0;
-  successSound.play();
-
-  p.score += POINTS_PER_SCORE;
-
-  highlightRow(playerId);
-  render();
-
-  if (p.score >= WINNING_SCORE) {
-    setTimeout(() => {
-      showWinner(p.name);
-    }, 300);
-  }
-}
-
-
-
-
-/* ================================
-   RENDER
-================================ */
-
-function render() {
   players.sort((a, b) => b.score - a.score);
-  renderScoreboard(playerList, players, scorePoint);
+  renderScoreboard(playerList, players, handleScore);
 }
 
-/* ================================
-   OVERLAYS
-================================ */
+/* ---------- OVERLAY ---------- */
 
-howToBtn.onclick = () => {
+howToBtn.onclick = howToBtnSetup.onclick = () => {
   howToOverlay.classList.remove("hidden");
 };
 
@@ -177,21 +147,32 @@ closeHowToBtn.onclick = () => {
   howToOverlay.classList.add("hidden");
 };
 
-newGameBtn.onclick = () => {
+newGameBtn.onclick = async () => {
+  if (sessionRef && sessionStart) {
+    const duration = Math.round((Date.now() - sessionStart) / 1000);
+    try {
+      await updateDoc(sessionRef, {
+        durationSeconds: duration,
+        finalScores: players.map(p => ({ name: p.name, score: p.score })),
+      });
+    } catch (e) {}
+  }
   location.reload();
 };
 
-winnerRestartBtn.onclick = () => {
-  location.reload();
-};
-
-function showWinner(name) {
-  winnerName.textContent = `${name} wins! 🎉`;
-  winnerOverlay.classList.remove("hidden");
-}
-
-// Show How to Play on first load
-window.addEventListener("load", () => {
-  openHowTo();
+// Also log if user closes/refreshes the tab mid-game
+window.addEventListener("beforeunload", () => {
+  if (sessionRef && sessionStart) {
+    const duration = Math.round((Date.now() - sessionStart) / 1000);
+    navigator.sendBeacon && updateDoc(sessionRef, {
+      durationSeconds: duration,
+      finalScores: players.map(p => ({ name: p.name, score: p.score })),
+    }).catch(() => {});
+  }
 });
 
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#closeHowToBtn")) {
+    document.getElementById("howToOverlay").classList.add("hidden");
+  }
+});
