@@ -47,7 +47,8 @@ closeHowToBtn.onclick = closeHowTo;
 /* ---------- ADD PLAYER ---------- */
 
 addPlayerBtn.onclick = () => {
-  const name = playerInput.value.trim();
+  const input = document.getElementById("playerInput");
+  const name = input.value.trim();
   if (!name) return;
 
   players.push({
@@ -56,8 +57,8 @@ addPlayerBtn.onclick = () => {
     score: 0
   });
 
-  playerInput.value = "";
-  renderScoreboard(playerList, players, handleScore);
+  input.value = "";
+  renderScoreboard(document.getElementById("playerList"), players, handleScore);
 };
 
 /* ---------- START GAME ---------- */
@@ -176,3 +177,4 @@ document.addEventListener("click", (e) => {
     document.getElementById("howToOverlay").classList.add("hidden");
   }
 });
+
